@@ -20,66 +20,29 @@ library(lme4)
 library("RColorBrewer")
 library(ggplot2)
 
-EMR_long_lab<-read.csv("Data/EMR_LABS_Term_PTB_one_time_point_36_categorical.csv")
+EMR_long_labs<-read.csv("Data/EMR_LABS_Term_PTB_longitudinal_36_categorical.csv")
 EMR_long_diags<-read.csv("Data/EMR_Diagnoses_Term_PTB_longitudinal_36.csv")
 EMR_long_meds<-read.csv("Data/EMR_Meds_Term_PTB_longitudinal_36.csv")
 
-####Princiapl component analysis to study data
-##Diags
-pca <- prcomp(t(EMR_long_diags[,-c(1:5)]))
-SPP <- EMR_long_diags[,5]
-
-library("RColorBrewer")
-COLOR=brewer.pal(3,"Set1")
-
-pc <- c(1,2)
-tiff("pca_plot_EMR_diags.tiff",h=2000,w=2000,res=300)
-plot(pca$x[,pc[1]], pca$x[,pc[2]], col=COLOR[SPP],pch=20,cex=1.7,xlab="PC1",ylab="PC2")
-legend("topright", legend=levels(levels.SPP), col=COLOR,pch=20,cex=1.2)
-dev.off()
-
-##meds
-pca <- prcomp(t(EMR_long_meds[,-c(1:5)]))
-SPP <- EMR_long_meds[,5]
-
-library("RColorBrewer")
-COLOR=brewer.pal(3,"Set1")
-
-pc <- c(1,2)
-tiff("pca_plot_EMR_meds.tiff",h=2000,w=2000,res=300)
-plot(pca$x[,pc[1]], pca$x[,pc[2]], col=COLOR[SPP],pch=20,cex=1.7,xlab="PC1",ylab="PC2")
-legend("topright", legend=levels(levels.SPP), col=COLOR,pch=20,cex=1.2)
-dev.off()
 
 #########################
 #### Diags data ########
 ########################
-EMR_long_diags_data<-EMR_long_diags[,6:ncol(EMR_long_diags)] ##3071 diags
+EMR_long_diags_data<-EMR_long_diags[,6:ncol(EMR_long_diags)] ##3066 diags
 rownames(EMR_long_diags_data)<-EMR_long_diags$Sample_ID
-num_diags_PTB<-NULL
-num_diags_Term<-NULL
-for (i in 1:ncol(EMR_long_diags_data)){
-  num_diags_PTB[i]<-table(EMR_long_diags_data[which(EMR_long_diags$Term=="PTB"),i])[2]
-  num_diags_Term[i]<-table(EMR_long_diags_data[which(EMR_long_diags$Term=="Term"),i])[2]
-}
-num_diags_PTB<-ifelse(is.na(num_diags_PTB)==T,0,num_diags_PTB)
-num_diags_Term<-ifelse(is.na(num_diags_Term)==T,0,num_diags_Term)
 
-EMR_long_diags_data_PTB<-EMR_long_diags_data[which(EMR_long_diags$Term=="PTB"),which(num_diags_PTB>1)] #567 variables
-EMR_long_diags_data_Term<-EMR_long_diags_data[which(EMR_long_diags$Term=="Term"),which(num_diags_Term>1)] #1955 variables
+EMR_long_diags_merge<-cbind(EMR_long_diags$Term,EMR_long_diags$WeekOfPregnancy,EMR_long_diags$Patient_ID,EMR_long_diags_data)
+colnames(EMR_long_diags_merge)[1:3]<-c("Term","WeekOfPregnancy","Patient_ID")
+EMR_long_diags_merge$Patient_ID<-factor(EMR_long_diags$Patient_ID)
+EMR_long_diags_merge$Term<-factor(EMR_long_diags$Term,levels = c("Term","PTB"))
 
-id.common<-match(colnames(EMR_long_diags_data_PTB),colnames(EMR_long_diags_data_Term))
-EMR_long_diags_merge<-rbind(EMR_long_diags_data_PTB[,which(is.na(id.common)==F)],EMR_long_diags_data_Term[,na.omit(id.common)]) 
-EMR_long_diags_merge<-EMR_long_diags_merge[match(EMR_long_diags$Sample_ID,rownames(EMR_long_diags_merge)),]
-##524 variables is the final set with lab test in more than 1 sample per category
-
-p_value_long<-NULL
+p_value_long_diags<-NULL
 for (i in 1:ncol(EMR_long_diags_merge)){
   print(i)
-  fm_full <-  try(glmer(EMR_long_diags$Term ~ as.numeric(EMR_long_diags_merge[,i]) + EMR_long_diags$WeekOfPregnancy + (1|EMR_long_diags$Patient_ID) ,
+  fm_full <-  try(glmer(Term ~ EMR_long_diags_merge[,i] + WeekOfPregnancy + (1|Patient_ID) ,data=EMR_long_diags_merge,
                     family=binomial))
   if(class(fm_full)!="try-error"){
-    p_value_long[i]<-coefficients(summary(fm_full))[2,4]
+    p_value_long_diags[i]<-coefficients(summary(fm_full))[2,4]
   }
 }
 
@@ -96,24 +59,6 @@ xyplot(EMR_long_diags_merge[,500] ~ EMR_long_diags$WeekOfPregnancy,groups=EMR_lo
 ########################
 EMR_long_meds_data<-EMR_long_meds[,6:ncol(EMR_long_meds)] ##457 meds
 rownames(EMR_long_meds_data)<-EMR_long_meds$Sample_ID
-# num_meds_PTB<-NULL
-# num_meds_Term<-NULL
-# num_meds<-NULL
-# for (i in 1:ncol(EMR_long_meds_data)){
-#   num_meds_PTB[i]<-table(EMR_long_meds_data[which(EMR_long_meds$Term=="PTB"),i])[2]
-#   num_meds_Term[i]<-table(EMR_long_meds_data[which(EMR_long_meds$Term=="Term"),i])[2]
-#   num_meds[i]<-table(EMR_long_meds_data[,i])[2]
-# }
-# num_meds_PTB<-ifelse(is.na(num_meds_PTB)==T,0,num_meds_PTB)
-# num_meds_Term<-ifelse(is.na(num_meds_Term)==T,0,num_meds_Term)
-# 
-# EMR_long_meds_data_PTB<-EMR_long_meds_data[which(EMR_long_meds$Term=="PTB"),which(num_meds_PTB>1)] #131 variables
-# EMR_long_meds_data_Term<-EMR_long_meds_data[which(EMR_long_meds$Term=="Term"),which(num_meds_Term>1)] #338 variables
-# 
-# id.common<-match(colnames(EMR_long_meds_data_PTB),colnames(EMR_long_meds_data_Term))
-# EMR_long_meds_merge<-rbind(EMR_long_meds_data_PTB[,which(is.na(id.common)==F)],EMR_long_meds_data_Term[,na.omit(id.common)]) 
-# EMR_long_meds_merge<-EMR_long_meds_merge[match(EMR_long_meds$Sample_ID,rownames(EMR_long_meds_merge)),]
-##126 variables is the final set with lab test in more than 1 sample per category
 
 EMR_long_meds_merge<-cbind(EMR_long_meds$Term,EMR_long_meds$WeekOfPregnancy,EMR_long_meds$Patient_ID,EMR_long_meds_data)
 colnames(EMR_long_meds_merge)[1:3]<-c("Term","WeekOfPregnancy","Patient_ID")
@@ -197,3 +142,88 @@ p <- ggplot(fm_full, aes(x = WeekOfPregnancy, y = EMR_long_meds_merge_sign[,i], 
 print(p)
 
 
+################
+### LAB TEST ###
+###############
+EMR_long_labs_data<-EMR_long_labs[,7:ncol(EMR_long_labs)] ##230 labs
+rownames(EMR_long_labs_data)<-EMR_long_labs$Sample_ID
+
+num_null<-NULL
+for (i in 1:ncol(EMR_long_labs_data)){
+  num_null[i]<-dim(table(EMR_long_labs_data[,i]))
+}
+
+EMR_long_labs_full<-EMR_long_labs_data[,which(num_null>1)] ##Only 34 lab test are complete
+num_categ<-NULL
+for (i in 1:ncol(EMR_long_labs_full)){
+  num_categ[i]<-dim(table(EMR_long_labs_full[,i]))
+}
+
+
+EMR_long_labs_full_2categ<-EMR_long_labs_full[,which(num_categ==2)]
+EMR_long_labs_full_3categ<-EMR_long_labs_full[,which(num_categ==3)]
+
+##For those that only have the categories taken vs taken ab
+EMR_long_labs_merge_2categ<-cbind(EMR_long_labs$Term,EMR_long_labs$WeekOfPregnancy,EMR_long_labs$Patient_ID,EMR_long_labs_full_2categ)
+colnames(EMR_long_labs_merge_2categ)[1:3]<-c("Term","WeekOfPregnancy","Patient_ID")
+EMR_long_labs_merge_2categ$Patient_ID<-factor(EMR_long_labs_merge_2categ$Patient_ID)
+EMR_long_labs_merge_2categ$Term<-factor(EMR_long_labs_merge_2categ$Term,levels = c("Term","PTB"))
+
+results_2categ<-matrix(NA,ncol(EMR_long_labs_merge_2categ),4)
+for (i in 4:ncol(EMR_long_labs_merge_2categ)){
+  print(i)
+  fm_full <-  try(glmer(Term ~ relevel(EMR_long_labs_merge_2categ[,i],ref="Not_taken") + WeekOfPregnancy + (1|Patient_ID),
+                        data=EMR_long_labs_merge_2categ, family=binomial))
+  if(class(fm_full)!="try-error"){
+    results_2categ[i,1]<-coefficients(summary(fm_full))[2,1] #coef not-taken
+    results_2categ[i,2]<-coefficients(summary(fm_full))[2,4] #p not taken
+    results_2categ[i,3]<-coefficients(summary(fm_full))[3,1] #coef week
+    results_2categ[i,4]<-coefficients(summary(fm_full))[3,4] #p week
+    
+  }
+}
+results_2categ<-results_2categ[-c(1:3),]
+colnames(results_2categ)<-c("coef takenAb","p takenAb","coef week","p week")
+rownames(results_2categ)<-colnames(EMR_long_labs_merge_2categ)[-c(1:3)]
+write.csv(results_2categ,"results_2categ_labs.csv")
+
+##For those that have three categories 
+EMR_long_labs_merge_3categ<-cbind(EMR_long_labs$Term,EMR_long_labs$WeekOfPregnancy,EMR_long_labs$Patient_ID,EMR_long_labs_full_3categ)
+colnames(EMR_long_labs_merge_3categ)[1:3]<-c("Term","WeekOfPregnancy","Patient_ID")
+EMR_long_labs_merge_3categ$Patient_ID<-factor(EMR_long_labs_merge_3categ$Patient_ID)
+EMR_long_labs_merge_3categ$Term<-factor(EMR_long_labs_merge_3categ$Term,levels = c("Term","PTB"))
+
+##The reference is taken normal
+results_3categ<-matrix(NA,ncol(EMR_long_labs_merge_3categ),6)
+for (i in 4:ncol(EMR_long_labs_merge_3categ)){
+  print(i)
+  fm_full <-  try(glmer(Term ~ relevel(EMR_long_labs_merge_3categ[,i],ref="Taken_normal") + WeekOfPregnancy + (1|Patient_ID),
+                        data=EMR_long_labs_merge_3categ, family=binomial))
+  if(class(fm_full)!="try-error"){
+    results_3categ[i,1]<-coefficients(summary(fm_full))[2,1] #coef not-taken
+    results_3categ[i,2]<-coefficients(summary(fm_full))[2,4] #p not taken
+    results_3categ[i,3]<-coefficients(summary(fm_full))[3,1] #coef taken-ab
+    results_3categ[i,4]<-coefficients(summary(fm_full))[3,4] #p taken-ab
+    results_3categ[i,5]<-coefficients(summary(fm_full))[4,1] #coef week
+    results_3categ[i,6]<-coefficients(summary(fm_full))[4,4] #p week
+    
+  }
+}
+results_3categ<-results_3categ[-c(1:3),]
+colnames(results_3categ)<-c("coef notTaken","p notTaken","coef takenAb","p takenAb","coef week","p week")
+rownames(results_3categ)<-colnames(EMR_long_labs_merge_3categ)[-c(1:3)]
+write.csv(results_3categ,"results_3categ_labs.csv")
+
+
+tiff("Lymphocyte.Abs.Cnt_labs.tiff",res=300,w=2000,h=2500)
+ggplot(EMR_long_labs_merge_3categ, aes(x=as.character(WeekOfPregnancy))) +
+  geom_bar(data=EMR_long_labs_merge_3categ[EMR_long_labs_merge_3categ$Term=="Term",], 
+           aes(y=(Lymphocyte.Abs.Cnt)/length(Lymphocyte.Abs.Cnt),fill=Term), stat="identity") +
+  geom_bar(data=EMR_long_labs_merge_3categ[EMR_long_labs_merge_3categ$Term=="PTB",],
+           aes(y=-(Lymphocyte.Abs.Cnt)/length(Lymphocyte.Abs.Cnt),fill=Term), stat="identity") +
+  geom_hline(yintercept=0, colour="white", lwd=1) +
+  coord_flip(ylim=c(-0.1,0.1)) + 
+  scale_y_continuous(breaks=seq(-0.1,0.1,0.05), labels=c(0.1,0.05,0,0.05,0.1)) +
+  labs(y="Percentage of RANITIDINE", x="Week of pregnancy") + 
+  ggtitle("                         PTB                                      Term")
+dev.off()
