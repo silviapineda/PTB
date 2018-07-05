@@ -66,12 +66,36 @@ id.merge<-match(EMR_long_meds$Unique_id,rownames(EMR_long_meds_result_filter))
 EMR_long_meds_result_filter<-EMR_long_meds_result_filter[id.merge,]
 ##108 meds final set
 
+#@#####Running only the set from Idit
+progesterone<-c("HYDROXYPROGESTERONE.CAPROATE..hydroxyprogesterone.caproate..USP..","Makena","PROGESTERONE..Progesterone.","Progesterone.Vaginal.Insert")
+delivery_block<-c("ASPIRIN..Aspirin.","INDOMETHACIN..Indomethacin.","MAGNESIUM.SULFATE..Magnesium.Sulfate.",
+"NIFEDIPINE..Nifedipine.","TERBUTALINE..Terbutaline.")
+##These are not in the filter ones: "nifedipine.er","nifedipine.er","IBUPROFEN..Ibuprofen.",
+id_prog<-match(progesterone,colnames(EMR_long_meds_result_filter))
+id_delivery<-match(delivery_block,colnames(EMR_long_meds_result_filter))
+
 ####Running the longitudinal model
 EMR_long_meds$Patient_index<-factor(EMR_long_meds$Patient_index)
 EMR_long_meds$Term<-factor(EMR_long_meds$Term,levels = c("Term","PTB"))
 EMR_long_meds$Individual_id<-factor(EMR_long_meds$Individual_id)
 EMR_long_meds$Outcome<-ifelse(EMR_long_meds$Term=="PTB",1,0)
 
+EMR_long_meds_List<-EMR_long_meds_result_filter[,c(id_prog,id_delivery)]
+###Using only Idit List
+results_meds<-matrix(NA,ncol(EMR_long_meds_List),2)
+for (i in 1:ncol(EMR_long_meds_List)){
+  print(i)
+  fm_full <-  try(glmer(EMR_long_meds$Outcome ~ EMR_long_meds_List[,i] +
+                          (1|EMR_long_meds$Patient_index),
+                        family=binomial))
+  
+  if(class(fm_full)!="try-error"){
+    results_meds[i,1]<-coefficients(summary(fm_full))[2,1] #coef ordered
+    results_meds[i,2]<-coefficients(summary(fm_full))[2,4] #p ordered
+  }
+}
+
+####Using all
 results_meds<-matrix(NA,ncol(EMR_long_meds_result_filter),2)
 for (i in 1:ncol(EMR_long_meds_result_filter)){
   print(i)
@@ -213,15 +237,29 @@ for( i in 1:10){
 save(predictions,original,file="predictions_meds.Rdata")
 
 ##After running
-load("Data/predictions_meds.Rdata")
+load("Results/predictions_meds.Rdata")
 library(AUC)
 auc<-NULL
+sensitivity<-NULL
 for(i in 1:10){
   auc[i]<-auc(roc(predictions[[i]],factor(original[[i]])))
 }
+conf_matrix<-table(round(predictions[[i]]),factor(original[[i]]))
+conf_matrix
+library(caret)
+sensitivity(conf_matrix)
+specificity(conf_matrix)
 
-tiff("AUC.tiff",res=300,w=2000,h=2000)
-plot(roc(pred_train,factor(EMR_long_meds_train$Term)))
+
+tiff("Results/AUC_meds.tiff",res=300,w=2000,h=2000)
+roc1<-roc(predictions[[1]],factor(original[[1]]))
+plot(roc1, col = 1, lty = 2, main = "ROC meds")
+
+for (i in 2:10){
+  roci<-roc(predictions[[i]],factor(original[[i]]))
+  plot(roci, col = i, lty = 3, add = TRUE)
+}
 dev.off()
+
 
 

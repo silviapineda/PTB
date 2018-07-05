@@ -236,18 +236,58 @@ for( i in 1:10){
 save(predictions,original,file="predictions_labs.Rdata")
 
 
+#########################################
+### Run LASSO with the whole data set ### 
+########################################
+set.seed(33)
+lambda <- seq(100,0,by=-5)
+family = binomial(link = logit)
+
+
+################## First Simple Method ############################################
+## Using BIC (or AIC, respectively) to determine the optimal tuning parameter lambda
+
+BIC_vec<-rep(Inf,length(lambda))
+for(j in 1:length(lambda)){
+  print(paste("Iteration ", j,sep=""))
+  glm1 <- try(glmmLasso(Term ~ Alanine.transaminase_order+Albumin..Serum...Plasma_order+Anion.Gap_order+Atrial.Rate_order+Bile.Acids..Total_order+Biophysical.Profile.Score..of.10._order+C.Reactive.Protein_order+Complement.C3..serum_order+Creat.per.Day..UR_order+eGFR.if.African.Amer_order+eGFR.if.non.African.American_order+Eosinophil.Abs.Ct_order+Ferritin_order+Fibrinogen..Functional_order+Gamma.Glutamyl.Transpeptidase_order+Glu.Tol.Post.Glucola_order+Glucose..meter.download_order+Glucose..non.fasting_order+Hematocrit_order+Hemoglobin.A1c_order+Hemoglobin.A2_order+Lipase_order+Lymphocyte.Abs.Cnt_order+Magnesium..Serum...Plasma_order+Monocyte.Abs.Count_order+Neutrophil.Absolute.Count_order+Phosphorus..Serum...Plasma_order+Platelet.Count_order+
+                          Prot.Concentration.UR_order+QTcb_order+RDW_order+Sedimentation.Rate_order+Sodium..Serum...Plasma_order+Specific.Gravity_order+Thyroid.Stimulating.Hormone_order+Total.Volume.Collected_order+Ventricular.Rate_order+Alanine.transaminase+Albumin..Serum...Plasma+Anion.Gap+Atrial.Rate+Bile.Acids..Total+Biophysical.Profile.Score..of.10.+C.Reactive.Protein+Complement.C3..serum+Creat.per.Day..UR+eGFR.if.African.Amer+eGFR.if.non.African.American+Eosinophil.Abs.Ct+Ferritin+Fibrinogen..Functional+Gamma.Glutamyl.Transpeptidase+Glu.Tol.Post.Glucola+Glucose..meter.download+Glucose..non.fasting+Hematocrit+Hemoglobin.A1c+Hemoglobin.A2+Lipase+Lymphocyte.Abs.Cnt+Magnesium..Serum...Plasma+Monocyte.Abs.Count+Neutrophil.Absolute.Count+Phosphorus..Serum...Plasma+Platelet.Count+Prot.Concentration.UR+QTcb+RDW+Sedimentation.Rate+Sodium..Serum...Plasma+Specific.Gravity+Thyroid.Stimulating.Hormone+Total.Volume.Collected+Ventricular.Rate,
+                        rnd = list(Patient_index=~1),family = family, data = EMR_long_labs_multivariate, lambda=lambda[j]),silent=TRUE)  
+  if(class(glm1)!="try-error"){  
+    BIC_vec[j]<-glm1$bic
+  }
+}
+
+opt<-which.min(BIC_vec)
+glm_final <- glmmLasso(Term ~ Alanine.transaminase_order+Albumin..Serum...Plasma_order+Anion.Gap_order+Atrial.Rate_order+Bile.Acids..Total_order+Biophysical.Profile.Score..of.10._order+C.Reactive.Protein_order+Complement.C3..serum_order+Creat.per.Day..UR_order+eGFR.if.African.Amer_order+eGFR.if.non.African.American_order+Eosinophil.Abs.Ct_order+Ferritin_order+Fibrinogen..Functional_order+Gamma.Glutamyl.Transpeptidase_order+Glu.Tol.Post.Glucola_order+Glucose..meter.download_order+Glucose..non.fasting_order+Hematocrit_order+Hemoglobin.A1c_order+Hemoglobin.A2_order+Lipase_order+Lymphocyte.Abs.Cnt_order+Magnesium..Serum...Plasma_order+Monocyte.Abs.Count_order+Neutrophil.Absolute.Count_order+Phosphorus..Serum...Plasma_order+Platelet.Count_order+
+                         Prot.Concentration.UR_order+QTcb_order+RDW_order+Sedimentation.Rate_order+Sodium..Serum...Plasma_order+Specific.Gravity_order+Thyroid.Stimulating.Hormone_order+Total.Volume.Collected_order+Ventricular.Rate_order+Alanine.transaminase+Albumin..Serum...Plasma+Anion.Gap+Atrial.Rate+Bile.Acids..Total+Biophysical.Profile.Score..of.10.+C.Reactive.Protein+Complement.C3..serum+Creat.per.Day..UR+eGFR.if.African.Amer+eGFR.if.non.African.American+Eosinophil.Abs.Ct+Ferritin+Fibrinogen..Functional+Gamma.Glutamyl.Transpeptidase+Glu.Tol.Post.Glucola+Glucose..meter.download+Glucose..non.fasting+Hematocrit+Hemoglobin.A1c+Hemoglobin.A2+Lipase+Lymphocyte.Abs.Cnt+Magnesium..Serum...Plasma+Monocyte.Abs.Count+Neutrophil.Absolute.Count+Phosphorus..Serum...Plasma+Platelet.Count+Prot.Concentration.UR+QTcb+RDW+Sedimentation.Rate+Sodium..Serum...Plasma+Specific.Gravity+Thyroid.Stimulating.Hormone+Total.Volume.Collected+Ventricular.Rate,
+                       rnd = list(Patient_index=~1),family = family, data = EMR_long_labs_multivariate, lambda=lambda[opt])
+
+save(glm_final,"LASSO_LABS_total.Rdata")
+
+
 ##After running
-load("Data/predictions_labs.Rdata")
+load("Results/predictions_labs.Rdata")
 library(AUC)
 auc<-NULL
+
 for(i in 1:10){
   auc[i]<-auc(roc(predictions[[i]],factor(original[[i]])))
 }
 
-tiff("AUC.tiff",res=300,w=2000,h=2000)
-plot(roc(roc(predictions[[i]],factor(original[[i]]))))
+conf_matrix<-table(round(predictions[[i]]),factor(original[[i]]))
+conf_matrix
+library(caret)
+sensitivity(conf_matrix)
+specificity(conf_matrix)
+
+tiff("Results/AUC_labs.tiff",res=300,w=2000,h=2000)
+roc1<-roc(predictions[[1]],factor(original[[1]]))
+plot(roc1, col = 1, lty = 2, main = "ROC labs")
+
+for (i in 2:10){
+  roci<-roc(predictions[[i]],factor(original[[i]]))
+  plot(roci, col = i, lty = 3, add = TRUE)
+}
 dev.off()
-
-
-
 

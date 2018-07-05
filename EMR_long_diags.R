@@ -86,11 +86,12 @@ for (i in 1:ncol(EMR_long_diags_result_filter)){
 }
 colnames(results_diags)<-c("coef_diags","p_diags")
 rownames(results_diags)<-colnames(EMR_long_diags_result_filter)
-write.csv(results_diags,"results_diags.csv")
+write.csv(results_diags,"Results/DIAGS/results_diags.csv")
 
 results_diags<-read.csv("Results/DIAGS/results_diags.csv")
-padjusted<-p.adjust(results_diags[,3],"fdr")
-results_diags_sign<-results_diags[which(padjusted<0.05),] #196 significance(all pass MT)
+results_diags$padj<-p.adjust(results_diags[,4],"fdr")
+results_diags$OR<-exp(results_diags$coef_diags)
+results_diags_sign<-results_diags[which(results_diags$padj<0.05),] #42 significance(all pass MT)
 id.sign<-match(results_diags_sign$X,colnames(EMR_long_diags_result_filter))
 EMR_long_diags_result_filter_sign<-EMR_long_diags_result_filter[,id.sign]
 
@@ -141,14 +142,7 @@ colnames(EMR_long_diags_multivariate)[1:2]<-c("Term","Patient_index")
 save(EMR_long_diags_multivariate,file="EMR_long_diags_multi.Rdata")
 
 ##To extract the names of the variables
-paste(colnames(EMR_long_diags_multivariate)[1:50],collapse ="+")
-paste(colnames(EMR_long_diags_multivariate)[51:100],collapse ="+")
-paste(colnames(EMR_long_diags_multivariate)[101:198],collapse ="+")
-
-fm_full <-  glmer(Term ~ A15.9+A56.19+A60.04+A92.5+B06.9+B96.89+D18.01+D23.9+D63.1+D69.6+D83.9+E01.0+E05.90+E06.9+E10.65+E11.319+E11.39+E23.6+E66.3+E78.5+E87.5+E88.09+E89.0+F11.10+F12.20+F31.9+F43.10+F43.20+F53+F90.9+G40.209+G40.909+G43.009+G43.109+G44.219+G47.00+G51.0+G56.03+H20.9+H93.11+H93.19+I15.8+I37.0+I42.0+I42.4+I45.81+I51.9+J02.9+
-                    J30.89+J32.9+J45.30+J98.11+K21.9+K31.89+K43.9+K51.90+K63.89+K90.0+L71.0+L71.9+L72.3+L73.8+L73.9+L81.9+M06.9+M25.531+M25.539+M25.569+M54.16+M54.2+M54.32+M62.89+M79.1+N05.8+N10+N18.2+N18.3+N20.0+N28.9+N30.10+N86+N97.0+O00.90+O09.02+O09.40+O09.73+O09.891+O10.419+O10.912+O11.9+O13.1+O14.93+O16.1+O22.33+O23.02+O23.03+O26.02+O26.10+
-                    O26.12+O30.009+O30.049+O30.109+O31.10X0+O33.7XX0+O34.02+O34.29+O34.43+O35.2XX0+O36.0120+O36.0199+O36.5921+O36.5991+O41.03X1+O41.8X20+O41.8X30+O41.90X0+O43.129+O44.12+O69.0XX0+O90.3+O92.29+O92.3+O92.79+O98.312+O98.313+O9A.319+P01.3+P02.29+P03.819+Q05.9+Q20.1+Q21.1+Q28.3+Q33.0+Q51.818+Q62.5+Q89.9+R06.00+R06.09+R09.89+R10.31+R11.10+R18.8+R19.09+R19.8+R20.9+R22.0+R22.1+R31.9+R32+R58+R63.4+R63.5+R63.6+R71.8+R76.0+R76.8+R82.79+R91.8+S80.00XA+Y92.099+Z03.71+Z03.89+Z12.4+Z20.1+Z30.2+Z31.430+Z36.82+Z38.2+Z39.2+Z48.22+Z51.81+Z53.1+Z59.1+Z59.9+Z65.9+Z67.41+Z68.26+Z68.27+Z68.33+Z68.36+Z68.42+Z80.8+Z80.9+Z82.0+Z84.81+Z85.850+Z87.19+Z87.39+Z87.74+Z88.0+Z90.49+Z91.040+Z91.19+Z91.49+Z94.1+
-                    (1|Patient_index),family=binomial,data = EMR_long_diags_multivariate)
+paste(colnames(EMR_long_diags_multivariate)[1:42],collapse ="+")
 
 #########################
 ##  Run in the server  ##
@@ -186,15 +180,10 @@ for( i in 1:10){
   library(MASS);library(nlme)
   #PQL<-glmmPQL(Term~1,random = ~1|Patient_index,family=family,data=EMR_long_diags_train)
   
-  #H93.19
-  EMR_long_diags_train<-EMR_long_diags_train[,-43]
-  
-  for(j in 1:length(lambda)){
+    for(j in 1:length(lambda)){
     print(paste("Iteration ", j,sep=""))
-    glm1 <- try(glmmLasso(Term ~ A15.9+A56.19+A60.04+A92.5+B06.9+B96.89+D18.01+D23.9+D63.1+D69.6+D83.9+E01.0+E05.90+E06.9+E10.65+E11.319+E11.39+E23.6+E66.3+E78.5+E87.5+E88.09+E89.0+F11.10+F12.20+F31.9+F43.10+F43.20+F53+F90.9+G40.209+G40.909+G43.009+G43.109+G44.219+G47.00+G51.0+G56.03+H20.9+H93.11+I15.8+I37.0+I42.0+I42.4+I45.81+I51.9+J02.9+
-                            J30.89+J32.9+J45.30+J98.11+K21.9+K31.89+K43.9+K51.90+K63.89+K90.0+L71.0+L71.9+L72.3+L73.8+L73.9+L81.9+M06.9+M25.531+M25.539+M25.569+M54.16+M54.2+M54.32+M62.89+M79.1+N05.8+N10+N18.2+N18.3+N20.0+N28.9+N30.10+N86+N97.0+O00.90+O09.02+O09.40+O09.73+O09.891+O10.419+O10.912+O11.9+O13.1+O14.93+O16.1+O22.33+O23.02+O23.03+O26.02+O26.10+
-                            O26.12+O30.009+O30.049+O30.109+O31.10X0+O33.7XX0+O34.02+O34.29+O34.43+O35.2XX0+O36.0120+O36.0199+O36.5921+O36.5991+O41.03X1+O41.8X20+O41.8X30+O41.90X0+O43.129+O44.12+O69.0XX0+O90.3+O92.29+O92.3+O92.79+O98.312+O98.313+O9A.319+P01.3+P02.29+P03.819+Q05.9+Q20.1+Q21.1+Q28.3+Q33.0+Q51.818+Q62.5+Q89.9+R06.00+R06.09+R09.89+R10.31+R11.10+R18.8+R19.09+R19.8+R20.9+R22.0+R22.1+R31.9+R32+R58+R63.4+R63.5+R63.6+R71.8+R76.0+R76.8+R82.79+R91.8+S80.00XA+Y92.099+Z03.71+Z03.89+Z12.4+Z20.1+Z30.2+Z31.430+Z36.82+Z38.2+Z39.2+Z48.22+Z51.81+Z53.1+Z59.1+Z59.9+Z65.9+Z67.41+Z68.26+Z68.27+Z68.33+Z68.36+Z68.42+Z80.8+Z80.9+Z82.0+Z84.81+Z85.850+Z87.19+Z87.39+Z87.74+Z88.0+Z90.49+Z91.040+Z91.19+Z91.49+Z94.1,
-                            rnd = list(Patient_index=~1),family = family, data = EMR_long_diags_train, lambda=lambda[j]),silent=TRUE)  
+    glm1 <- try(glmmLasso(Term ~ B96.89+D63.1+D69.6+E01.0+E05.90+E23.6+E89.0+F31.9+F43.10+F90.9+G40.209+G40.909+G47.00+G51.0+K21.9+K51.90+L73.8+L73.9+M06.9+M54.2+N05.8+N18.3+N28.9+O10.912+O14.93+O35.2XX0+O36.0120+O36.5921+O41.03X1+O41.8X20+O41.8X30+O90.3+Q20.1+Q62.5+Q89.9+R63.6+R71.8+R76.8+Z59.9+Z68.42,
+                          rnd = list(Patient_index=~1),family = family, data = EMR_long_diags_train, lambda=lambda[j]),silent=TRUE)  
     if(class(glm1)!="try-error"){  
       BIC_vec[j]<-glm1$bic
     }
@@ -202,10 +191,8 @@ for( i in 1:10){
   
   opt<-which.min(BIC_vec)
   print(opt)
-  glm_final <- try(glmmLasso(Term ~ A15.9+A56.19+A60.04+A92.5+B06.9+B96.89+D18.01+D23.9+D63.1+D69.6+D83.9+E01.0+E05.90+E06.9+E10.65+E11.319+E11.39+E23.6+E66.3+E78.5+E87.5+E88.09+E89.0+F11.10+F12.20+F31.9+F43.10+F43.20+F53+F90.9+G40.209+G40.909+G43.009+G43.109+G44.219+G47.00+G51.0+G56.03+H20.9+H93.11+I15.8+I37.0+I42.0+I42.4+I45.81+I51.9+J02.9+
-                           J30.89+J32.9+J45.30+J98.11+K21.9+K31.89+K43.9+K51.90+K63.89+K90.0+L71.0+L71.9+L72.3+L73.8+L73.9+L81.9+M06.9+M25.531+M25.539+M25.569+M54.16+M54.2+M54.32+M62.89+M79.1+N05.8+N10+N18.2+N18.3+N20.0+N28.9+N30.10+N86+N97.0+O00.90+O09.02+O09.40+O09.73+O09.891+O10.419+O10.912+O11.9+O13.1+O14.93+O16.1+O22.33+O23.02+O23.03+O26.02+O26.10+
-                           O26.12+O30.009+O30.049+O30.109+O31.10X0+O33.7XX0+O34.02+O34.29+O34.43+O35.2XX0+O36.0120+O36.0199+O36.5921+O36.5991+O41.03X1+O41.8X20+O41.8X30+O41.90X0+O43.129+O44.12+O69.0XX0+O90.3+O92.29+O92.3+O92.79+O98.312+O98.313+O9A.319+P01.3+P02.29+P03.819+Q05.9+Q20.1+Q21.1+Q28.3+Q33.0+Q51.818+Q62.5+Q89.9+R06.00+R06.09+R09.89+R10.31+R11.10+R18.8+R19.09+R19.8+R20.9+R22.0+R22.1+R31.9+R32+R58+R63.4+R63.5+R63.6+R71.8+R76.0+R76.8+R82.79+R91.8+S80.00XA+Y92.099+Z03.71+Z03.89+Z12.4+Z20.1+Z30.2+Z31.430+Z36.82+Z38.2+Z39.2+Z48.22+Z51.81+Z53.1+Z59.1+Z59.9+Z65.9+Z67.41+Z68.26+Z68.27+Z68.33+Z68.36+Z68.42+Z80.8+Z80.9+Z82.0+Z84.81+Z85.850+Z87.19+Z87.39+Z87.74+Z88.0+Z90.49+Z91.040+Z91.19+Z91.49+Z94.1,
-                         rnd = list(Patient_index=~1),family = family, data = EMR_long_diags_train, lambda=lambda[opt]))
+  glm_final <- try(glmmLasso(Term ~ B96.89+D63.1+D69.6+E01.0+E05.90+E23.6+E89.0+F31.9+F43.10+F90.9+G40.209+G40.909+G47.00+G51.0+K21.9+K51.90+L73.8+L73.9+M06.9+M54.2+N05.8+N18.3+N28.9+O10.912+O14.93+O35.2XX0+O36.0120+O36.5921+O41.03X1+O41.8X20+O41.8X30+O90.3+Q20.1+Q62.5+Q89.9+R63.6+R71.8+R76.8+Z59.9+Z68.42,
+                             rnd = list(Patient_index=~1),family = family, data = EMR_long_diags_train, lambda=lambda[opt]))
   if(class(glm1)!="try-error"){  
     predictions[[i]] <- predict(glm_final, EMR_long_diags_test, type="response",s=lambda[opt])
     original[[i]]<-EMR_long_diags_test$Term
@@ -215,15 +202,28 @@ for( i in 1:10){
 save(predictions,original,file="predictions_diags.Rdata")
 
 ##After running
-load("Data/predictions_diags.Rdata")
+load("Results/predictions_diags.Rdata")
 library(AUC)
 auc<-NULL
+
 for(i in 1:10){
   auc[i]<-auc(roc(predictions[[i]],factor(original[[i]])))
 }
 
-tiff("AUC.tiff",res=300,w=2000,h=2000)
-plot(roc(pred_train,factor(EMR_long_diags_train$Term)))
+conf_matrix<-table(round(predictions[[i]]),factor(original[[i]]))
+conf_matrix
+library(caret)
+sensitivity(conf_matrix)
+specificity(conf_matrix)
+
+tiff("AUC_diags.tiff",res=300,w=2000,h=2000)
+roc1<-roc(predictions[[1]],factor(original[[1]]))
+plot(roc1, col = 1, lty = 2, main = "ROC labs")
+
+for (i in 2:10){
+  roci<-roc(predictions[[i]],factor(original[[i]]))
+  plot(roci, col = i, lty = 3, add = TRUE)
+}
 dev.off()
 
 
