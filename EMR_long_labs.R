@@ -168,9 +168,10 @@ for(i in 1:ncol(EMR_long_labs_result_filter_sign)){
 ### Multivariate model  #####
 ############################
 ##First: Put everything needed in the same dataframe
-EMR_long_labs_multivariate<-cbind(EMR_long_labs$Outcome,EMR_long_labs$Patient_index,EMR_long_labs_order_filter_num_sign,EMR_long_labs_result_filter_sign)
+EMR_long_labs_multivariate<-cbind(EMR_long_labs$Outcome,EMR_long_labs$Patient_index,EMR_long_labs_order_filter_num,
+                                  EMR_long_labs_result_filter)
 colnames(EMR_long_labs_multivariate)[1:2]<-c("Term","Patient_index")
-save(EMR_long_labs_multivariate,file="EMR_long_labs_multi.Rdata")
+save(EMR_long_labs_multivariate,file="EMR_long_labs_multi_all.Rdata")
 
 ##To extract the names of the variables
 paste(colnames(EMR_long_labs_multivariate)[1:30],collapse ="+")

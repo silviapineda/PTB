@@ -27,6 +27,13 @@ setwd(working_directory)
 ############################
 ##First: Put everything needed in the same dataframe
 load("Data/EMR_long_labs_multi_all.Rdata")
+demographics<-read.csv("Data/EMR_patients_patient_race.csv")
+EMR_long_labs_multivariate$ID<-rownames(EMR_long_labs_multivariate)
+EMR_labs_demo<-merge(EMR_long_labs_multivariate,demographics,by="Patient_index")
+table(EMR_labs_demo[!duplicated(EMR_labs_demo$Patient_index),"Term"])
+table(EMR_labs_demo[,"Term"])
+
+
 
 # ##To extract the names of the variables
 # paste(colnames(EMR_long_labs_multivariate)[1:30],collapse ="+")
@@ -92,4 +99,26 @@ for( i in 1:10){
   original[[i]]<-EMR_long_labs_test$Term
 }
 save(predictions,original,file="Results/predictions_labs.Rdata")
+
+
+
+####
+## Analysis Results
+load("Results/predictions_labs.Rdata")
+library(AUC)
+auc<-NULL
+
+for(i in 1:10){
+  auc[i]<-auc(roc(predictions[[i]],factor(original[[i]])))
+}
+
+tiff("Results/AUC_labs_multi.tiff",res=300,w=2000,h=2000)
+roc1<-roc(predictions[[1]],factor(original[[1]]))
+plot(roc1, col = 1, lty = 2, main = "ROC labs")
+
+for (i in 2:10){
+  roci<-roc(predictions[[i]],factor(original[[i]]))
+  plot(roci, col = i, lty = 3, add = TRUE)
+}
+dev.off()
 

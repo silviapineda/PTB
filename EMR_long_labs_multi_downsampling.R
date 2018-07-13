@@ -107,3 +107,17 @@ for (i in 1:10){
   save(predictions,original,file=paste0("Results/predictions_labs_down_",i,".Rdata"))
 }
 
+
+auc_mean<-NULL
+for(i in 1:5){
+  print(i)
+  load(paste0("Results/LABS_down/predictions_labs_down_",i,".Rdata"))
+  auc<-NULL
+  for (j in 1:10){
+    print(j)
+    if(length(predictions[[j]])!=0){
+      auc[j]<-auc(roc(predictions[[j]],factor(original[[j]])))
+    }
+  }
+  auc_mean[i]<-mean(na.omit(auc))
+}

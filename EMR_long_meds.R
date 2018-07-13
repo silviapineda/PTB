@@ -35,6 +35,8 @@ splitpop <- strsplit(as.character(EMR_long_meds$Patient_index),"_")
 EMR_long_meds$Individual_id <- unlist(lapply(splitpop, "[", 1))
 EMR_long_meds$Birth_id<- unlist(lapply(splitpop, "[", 2))
 EMR_long_meds$Unique_id<-paste(EMR_long_meds$Patient_index,EMR_long_meds$WeekOfPregnancy,sep="_")
+rownames(EMR_long_meds)<-EMR_long_meds$Unique_id
+
 
 ##Select all the variables 
 EMR_long_meds_result<-EMR_long_meds[,4:(ncol(EMR_long_meds)-3)] #427 meds
@@ -162,9 +164,9 @@ for(i in 1:ncol(EMR_long_meds_result_filter_sign)){
 ### Multivariate model  #####
 ############################
 ##First: Put everything needed in the same dataframe
-EMR_long_meds_multivariate<-cbind(EMR_long_meds$Outcome,EMR_long_meds$Patient_index,EMR_long_meds_result_filter_sign)
+EMR_long_meds_multivariate<-cbind(EMR_long_meds$Outcome,EMR_long_meds$Patient_index,EMR_long_meds_result_filter)
 colnames(EMR_long_meds_multivariate)[1:2]<-c("Term","Patient_index")
-save(EMR_long_meds_multivariate,file="EMR_long_meds_multi.Rdata")
+save(EMR_long_meds_multivariate,file="EMR_long_meds_multi_all.Rdata")
 
 ##To extract the names of the variables
 paste(colnames(EMR_long_meds_multivariate),collapse ="+")

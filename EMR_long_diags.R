@@ -137,9 +137,9 @@ for(i in 1:ncol(EMR_long_diags_result_filter_sign)){
 ### Multivariate model  #####
 ############################
 ##First: Put everything needed in the same dataframe
-EMR_long_diags_multivariate<-cbind(EMR_long_diags$Outcome,EMR_long_diags$Patient_index,EMR_long_diags_result_filter_sign)
+EMR_long_diags_multivariate<-cbind(EMR_long_diags$Outcome,EMR_long_diags$Patient_index,EMR_long_diags_result_filter)
 colnames(EMR_long_diags_multivariate)[1:2]<-c("Term","Patient_index")
-save(EMR_long_diags_multivariate,file="EMR_long_diags_multi.Rdata")
+save(EMR_long_diags_multivariate,file="EMR_long_diags_multi_all.Rdata")
 
 ##To extract the names of the variables
 paste(colnames(EMR_long_diags_multivariate)[1:42],collapse ="+")
