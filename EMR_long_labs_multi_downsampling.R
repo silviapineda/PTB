@@ -8,7 +8,8 @@ print(x)
 ###
 ### PROCESS: Longitudinal data analysis. ENET for longitudinal data with all the data for the lab test
 ###           
-### DESCRIP: Separate in training and testing 10 times and run glmmLasso
+### DESCRIP: Downsamplin 1:1 
+###         Separate in training and testing 10 times and run glmmLasso
 ###         
 ###
 ### Author: Silvia Pineda
@@ -18,15 +19,33 @@ library(lattice)
 library(lme4)
 library("RColorBrewer")
 library(ggplot2)
+library(caret)
 
-working_directory<-"/home/pinedasans/PTB/"
+working_directory<-"/Users/Pinedasans/PTB/"
 setwd(working_directory)
 
 #############################
 ### Multivariate model  #####
 ############################
 ##First: Put everything needed in the same dataframe
-load("Data/EMR_long_labs_multi_all.Rdata")
+load("Data/EMR_long_labs_multi.Rdata")
+
+#demographics<-read.csv("Data/EMR_patients_patient_race.csv") 
+##I am going to wait to Idit for the demo, meantime I will work only with the labs
+# EMR_long_labs_multivariate$ID<-rownames(EMR_long_labs_multivariate)
+# EMR_labs_demo<-merge(EMR_long_labs_multivariate,demographics,by="Patient_index")
+# EMR_labs_demo<-subset(EMR_labs_demo,select = -c(ID,X,Term.y))
+# colnames(EMR_labs_demo)[1]<-"Term"
+# ##near Zero Variance correction
+# id_nzv<-nearZeroVar(EMR_labs_demo,freqCut = 99/1,uniqueCut = 1)
+# EMR_labs_demo_filter<-EMR_labs_demo[,-id_nzv] ##106
+
+EMR_labs_demo<-EMR_long_labs_multivariate
+
+# ##To extract the names of the variables for the glmmLasso
+paste(colnames(EMR_labs_demo)[1:30],collapse ="+")
+paste(colnames(EMR_labs_demo)[31:60],collapse ="+")
+paste(colnames(EMR_labs_demo)[61:ncol(EMR_labs_demo)],collapse ="+")
 
 ########################
 ##### Downsampling ####
@@ -35,8 +54,8 @@ set.seed(54)
 for (i in 1:10){
   print(paste("down",i))
   ##Number of unique patient_index to obtain the downsampling
-  EMR_long_labs_patient<-EMR_long_labs_multivariate[match(unique(EMR_long_labs_multivariate$Patient_index),
-                                                          EMR_long_labs_multivariate$Patient_index),c("Term","Patient_index")]
+  EMR_long_labs_patient<-EMR_labs_demo[match(unique(EMR_labs_demo$Patient_index),
+                                             EMR_labs_demo$Patient_index),c("Term","Patient_index")]
   
   dim_term<-table(EMR_long_labs_patient[,"Term"])[1]
   dim_ptb<-table(EMR_long_labs_patient[,"Term"])[2]
@@ -81,22 +100,20 @@ for (i in 1:10){
     BIC_vec<-rep(Inf,length(lambda))
     for(k in 1:length(lambda)){
       print(paste("Iteration ", k,sep=""))
-      glm1 <- try(glmmLasso(Term ~ X.Int.l.Normaliz.Ratio._order+Activated.Partial.Thromboplastin.Time_order+AFI..cm._order+Alanine.transaminase_order+Albumin..Random_order+Albumin..Serum...Plasma_order+Alkaline.Phosphatase_order+Anion.Gap_order+Aspartate.transaminase_order+Atrial.Rate_order+Banding.Resolution._order+Basophil.Abs.Count_order+Bile.Acids..Total_order+Bilirubin..Direct_order+Bilirubin..Total_order+Biophysical.Profile.Score..of.10._order+Biophysical.Profile.Score..of.8._order+C.Reactive.Protein_order+Calcium..total..Serum...Plasma_order+Calculated.P.Axis_order+Calculated.R.Axis_order+Calculated.T.Axis_order+Carbon.Dioxide..Total_order+Chloride..Serum...Plasma_order+Complement.C3..serum_order+Complement.C4..serum_order+Creat.per.Day..UR_order+Creatinine_order+
-                              Creatinine..random.urine_order+DEEPEST.VERTICAL.POCKET..CM._order+eGFR.if.African.Amer_order+eGFR.if.non.African.American_order+Eosinophil.Abs.Ct_order+Ferritin_order+Fetal.Breathing_order+Fetal.Movement_order+Fetal.Tone_order+FHR.Baseline_order+Fibrinogen..Functional_order+Fluid.Volume_order+Free.T4_order+Gamma.Glutamyl.Transpeptidase_order+Glu.Tol.Post.Glucola_order+Glucose.Loading.Screen_order+Glucose...UA._order+Glucose..120.Mins_order+Glucose..180.Mins_order+Glucose..60.Mins_order+Glucose..fasting_order+Glucose..Fasting..Pregnant..2.hr.GTT_order+Glucose..Fasting..Pregnant..3.hr.GTT_order+Glucose..meter.download_order+Glucose..non.fasting_order+HBV.Log.IU.mL_order+HBV.Real.Time_order+Hematocrit_order+Hemoglobin_order+Hemoglobin.A_order+
-                              Hemoglobin.A1c_order+Hemoglobin.A2_order+Heparin.Level_order+Hours.Collected_order+IgG..serum_order+Imm.Gran..Left.Shift_order+Ketones..UA_order+Lactate.Dehydrogenase..Serum...Plasma_order+Lipase_order+LVEDVi_order+LVEF.by.MOD.Bi.plane_order+LVESVi_order+Lymphocyte.Abs.Cnt_order+Magnesium..Serum...Plasma_order+MCH_order+MCHC_order+MCV_order+Metaphases.Analyzed._order+Metaphases.Counted._order+Metaphases.Karyotyped._order+Mins.Post.Gluc.Dose_order+Monocyte.Abs.Count_order+Neutrophil.Absolute.Count_order+Nonstress.Test_order+Number.of.Cultures._order+OGT.Glucola.Dose_order+P.R.Interval_order+Parathormone_order+Parvo.Ab.B19.IgG_order+Parvo.Ab.B19.IgM_order+pH..UA_order+Phosphorus..Serum...Plasma_order+Platelet.Count_order+POCT.Glucose_order+POCT.pH..UA_order+POCT.Spec.Grav..UA_order+Potassium..Serum...Plasma_order+Prot.Concentration.UR_order+Prot.Total.per.Day.UR_order+Protein.Creat.Ratio..random_order+
-                              Protein..Total..Serum...Plasma_order+Protein..UA_order+PT_order+QRS.Duration_order+QT.Interval_order+QTcb_order+RBC.Count_order+RBCs...Units.Ready_order+RDW_order+Rubella.Antibody_order+RVVT.Seconds_order+Sedimentation.Rate_order+Sodium..Serum...Plasma_order+Specific.Gravity_order+T4..Total_order+Tacrolimus_order+Thyroid.Stimulating.Hormone_order+Thyroid.Stimulating.Immunoglobulin_order+Total.Volume.Collected_order+Triglycerides..serum_order+Urea.Nitrogen..Serum...Plasma_order+Uric.Acid..Serum...Plasma_order+Ventricular.Rate_order+Vitamin.B12_order+Vitamin.D..25.Hydroxy_order+WBC.Count_order+Weight.In.Kg_order,
-                            rnd = list(Patient_index=~1),family = family, data = EMR_long_labs_train, lambda=lambda[j]),silent=TRUE)  
+      glm1 <- try(glmmLasso(Term ~ X.Int.l.Normaliz.Ratio._order+Activated.Partial.Thromboplastin.Time_order+AFI..cm._order+Alanine.transaminase_order+Albumin..Serum...Plasma_order+Alkaline.Phosphatase_order+Anion.Gap_order+Aspartate.transaminase_order+Atrial.Rate_order+Basophil.Abs.Count_order+Bile.Acids..Total_order+Bilirubin..Total_order+Biophysical.Profile.Score..of.10._order+Calcium..total..Serum...Plasma_order+Calculated.P.Axis_order+Calculated.R.Axis_order+Calculated.T.Axis_order+Carbon.Dioxide..Total_order+Chloride..Serum...Plasma_order+Creatinine_order+Creatinine..random.urine_order+DEEPEST.VERTICAL.POCKET..CM._order+eGFR.if.non.African.American_order+Eosinophil.Abs.Ct_order+Fetal.Breathing_order+Fetal.Movement_order+Fetal.Tone_order+FHR.Baseline_order+
+                              Fibrinogen..Functional_order+Fluid.Volume_order+Free.T4_order+Glu.Tol.Post.Glucola_order+Glucose.Loading.Screen_order+Glucose..120.Mins_order+Glucose..60.Mins_order+Glucose..Fasting..Pregnant..2.hr.GTT_order+Glucose..Fasting..Pregnant..3.hr.GTT_order+Glucose..meter.download_order+Glucose..non.fasting_order+Hematocrit_order+Hemoglobin_order+Hemoglobin.A1c_order+Hours.Collected_order+Lymphocyte.Abs.Cnt_order+MCH_order+MCHC_order+MCV_order+Mins.Post.Gluc.Dose_order+Monocyte.Abs.Count_order+Neutrophil.Absolute.Count_order+Nonstress.Test_order+OGT.Glucola.Dose_order+P.R.Interval_order+pH..UA_order+Platelet.Count_order+POCT.pH..UA_order+POCT.Spec.Grav..UA_order+Potassium..Serum...Plasma_order+
+                              Prot.Concentration.UR_order+Prot.Total.per.Day.UR_order+Protein.Creat.Ratio..random_order+PT_order+QRS.Duration_order+QT.Interval_order+QTcb_order+RBC.Count_order+Sodium..Serum...Plasma_order+Specific.Gravity_order+Thyroid.Stimulating.Hormone_order+Total.Volume.Collected_order+Urea.Nitrogen..Serum...Plasma_order+Ventricular.Rate_order+WBC.Count_order+X.Int.l.Normaliz.Ratio.+Activated.Partial.Thromboplastin.Time+AFI..cm.+Alanine.transaminase+Albumin..Serum...Plasma+Alkaline.Phosphatase+Anion.Gap+Aspartate.transaminase+Atrial.Rate+Basophil.Abs.Count+Bile.Acids..Total+Bilirubin..Total+Biophysical.Profile.Score..of.10.+Calcium..total..Serum...Plasma+Calculated.P.Axis+Calculated.R.Axis+Calculated.T.Axis+Carbon.Dioxide..Total+Chloride..Serum...Plasma+Creatinine+Creatinine..random.urine+DEEPEST.VERTICAL.POCKET..CM.+eGFR.if.non.African.American+Eosinophil.Abs.Ct+Fetal.Breathing+Fetal.Movement+Fetal.Tone+FHR.Baseline+Fibrinogen..Functional+Fluid.Volume+Free.T4+Glu.Tol.Post.Glucola+Glucose.Loading.Screen+Glucose..120.Mins+Glucose..60.Mins+Glucose..Fasting..Pregnant..2.hr.GTT+Glucose..Fasting..Pregnant..3.hr.GTT+Glucose..meter.download+Glucose..non.fasting+Hematocrit+Hemoglobin+Hemoglobin.A1c+Hours.Collected+Lymphocyte.Abs.Cnt+MCH+MCHC+MCV+Mins.Post.Gluc.Dose+Monocyte.Abs.Count+Neutrophil.Absolute.Count+Nonstress.Test+OGT.Glucola.Dose+P.R.Interval+pH..UA+Platelet.Count+POCT.pH..UA+POCT.Spec.Grav..UA+Potassium..Serum...Plasma+Prot.Concentration.UR+Prot.Total.per.Day.UR+Protein.Creat.Ratio..random+PT+QRS.Duration+QT.Interval+QTcb+RBC.Count+Sodium..Serum...Plasma+Specific.Gravity+Thyroid.Stimulating.Hormone+Total.Volume.Collected+Urea.Nitrogen..Serum...Plasma+Ventricular.Rate+WBC.Count
+                            ,rnd = list(Patient_index=~1),family = family, data = EMR_long_labs_train, lambda=lambda[j]),silent=TRUE)  
       if(class(glm1)!="try-error"){  
         BIC_vec[j]<-glm1$bic
       }
     }
     
     opt<-which.min(BIC_vec)
-    glm_final <- try(glmmLasso(Term ~ X.Int.l.Normaliz.Ratio._order+Activated.Partial.Thromboplastin.Time_order+AFI..cm._order+Alanine.transaminase_order+Albumin..Random_order+Albumin..Serum...Plasma_order+Alkaline.Phosphatase_order+Anion.Gap_order+Aspartate.transaminase_order+Atrial.Rate_order+Banding.Resolution._order+Basophil.Abs.Count_order+Bile.Acids..Total_order+Bilirubin..Direct_order+Bilirubin..Total_order+Biophysical.Profile.Score..of.10._order+Biophysical.Profile.Score..of.8._order+C.Reactive.Protein_order+Calcium..total..Serum...Plasma_order+Calculated.P.Axis_order+Calculated.R.Axis_order+Calculated.T.Axis_order+Carbon.Dioxide..Total_order+Chloride..Serum...Plasma_order+Complement.C3..serum_order+Complement.C4..serum_order+Creat.per.Day..UR_order+Creatinine_order+
-                             Creatinine..random.urine_order+DEEPEST.VERTICAL.POCKET..CM._order+eGFR.if.African.Amer_order+eGFR.if.non.African.American_order+Eosinophil.Abs.Ct_order+Ferritin_order+Fetal.Breathing_order+Fetal.Movement_order+Fetal.Tone_order+FHR.Baseline_order+Fibrinogen..Functional_order+Fluid.Volume_order+Free.T4_order+Gamma.Glutamyl.Transpeptidase_order+Glu.Tol.Post.Glucola_order+Glucose.Loading.Screen_order+Glucose...UA._order+Glucose..120.Mins_order+Glucose..180.Mins_order+Glucose..60.Mins_order+Glucose..fasting_order+Glucose..Fasting..Pregnant..2.hr.GTT_order+Glucose..Fasting..Pregnant..3.hr.GTT_order+Glucose..meter.download_order+Glucose..non.fasting_order+HBV.Log.IU.mL_order+HBV.Real.Time_order+Hematocrit_order+Hemoglobin_order+Hemoglobin.A_order+
-                             Hemoglobin.A1c_order+Hemoglobin.A2_order+Heparin.Level_order+Hours.Collected_order+IgG..serum_order+Imm.Gran..Left.Shift_order+Ketones..UA_order+Lactate.Dehydrogenase..Serum...Plasma_order+Lipase_order+LVEDVi_order+LVEF.by.MOD.Bi.plane_order+LVESVi_order+Lymphocyte.Abs.Cnt_order+Magnesium..Serum...Plasma_order+MCH_order+MCHC_order+MCV_order+Metaphases.Analyzed._order+Metaphases.Counted._order+Metaphases.Karyotyped._order+Mins.Post.Gluc.Dose_order+Monocyte.Abs.Count_order+Neutrophil.Absolute.Count_order+Nonstress.Test_order+Number.of.Cultures._order+OGT.Glucola.Dose_order+P.R.Interval_order+Parathormone_order+Parvo.Ab.B19.IgG_order+Parvo.Ab.B19.IgM_order+pH..UA_order+Phosphorus..Serum...Plasma_order+Platelet.Count_order+POCT.Glucose_order+POCT.pH..UA_order+POCT.Spec.Grav..UA_order+Potassium..Serum...Plasma_order+Prot.Concentration.UR_order+Prot.Total.per.Day.UR_order+Protein.Creat.Ratio..random_order+
-                             Protein..Total..Serum...Plasma_order+Protein..UA_order+PT_order+QRS.Duration_order+QT.Interval_order+QTcb_order+RBC.Count_order+RBCs...Units.Ready_order+RDW_order+Rubella.Antibody_order+RVVT.Seconds_order+Sedimentation.Rate_order+Sodium..Serum...Plasma_order+Specific.Gravity_order+T4..Total_order+Tacrolimus_order+Thyroid.Stimulating.Hormone_order+Thyroid.Stimulating.Immunoglobulin_order+Total.Volume.Collected_order+Triglycerides..serum_order+Urea.Nitrogen..Serum...Plasma_order+Uric.Acid..Serum...Plasma_order+Ventricular.Rate_order+Vitamin.B12_order+Vitamin.D..25.Hydroxy_order+WBC.Count_order+Weight.In.Kg_order,
-                           rnd = list(Patient_index=~1),family = family, data = EMR_long_labs_train, lambda=lambda[opt]))
+    glm_final <- try(glmmLasso(Term ~ X.Int.l.Normaliz.Ratio._order+Activated.Partial.Thromboplastin.Time_order+AFI..cm._order+Alanine.transaminase_order+Albumin..Serum...Plasma_order+Alkaline.Phosphatase_order+Anion.Gap_order+Aspartate.transaminase_order+Atrial.Rate_order+Basophil.Abs.Count_order+Bile.Acids..Total_order+Bilirubin..Total_order+Biophysical.Profile.Score..of.10._order+Calcium..total..Serum...Plasma_order+Calculated.P.Axis_order+Calculated.R.Axis_order+Calculated.T.Axis_order+Carbon.Dioxide..Total_order+Chloride..Serum...Plasma_order+Creatinine_order+Creatinine..random.urine_order+DEEPEST.VERTICAL.POCKET..CM._order+eGFR.if.non.African.American_order+Eosinophil.Abs.Ct_order+Fetal.Breathing_order+Fetal.Movement_order+Fetal.Tone_order+FHR.Baseline_order+
+                                 Fibrinogen..Functional_order+Fluid.Volume_order+Free.T4_order+Glu.Tol.Post.Glucola_order+Glucose.Loading.Screen_order+Glucose..120.Mins_order+Glucose..60.Mins_order+Glucose..Fasting..Pregnant..2.hr.GTT_order+Glucose..Fasting..Pregnant..3.hr.GTT_order+Glucose..meter.download_order+Glucose..non.fasting_order+Hematocrit_order+Hemoglobin_order+Hemoglobin.A1c_order+Hours.Collected_order+Lymphocyte.Abs.Cnt_order+MCH_order+MCHC_order+MCV_order+Mins.Post.Gluc.Dose_order+Monocyte.Abs.Count_order+Neutrophil.Absolute.Count_order+Nonstress.Test_order+OGT.Glucola.Dose_order+P.R.Interval_order+pH..UA_order+Platelet.Count_order+POCT.pH..UA_order+POCT.Spec.Grav..UA_order+Potassium..Serum...Plasma_order+
+                                 Prot.Concentration.UR_order+Prot.Total.per.Day.UR_order+Protein.Creat.Ratio..random_order+PT_order+QRS.Duration_order+QT.Interval_order+QTcb_order+RBC.Count_order+Sodium..Serum...Plasma_order+Specific.Gravity_order+Thyroid.Stimulating.Hormone_order+Total.Volume.Collected_order+Urea.Nitrogen..Serum...Plasma_order+Ventricular.Rate_order+WBC.Count_order+X.Int.l.Normaliz.Ratio.+Activated.Partial.Thromboplastin.Time+AFI..cm.+Alanine.transaminase+Albumin..Serum...Plasma+Alkaline.Phosphatase+Anion.Gap+Aspartate.transaminase+Atrial.Rate+Basophil.Abs.Count+Bile.Acids..Total+Bilirubin..Total+Biophysical.Profile.Score..of.10.+Calcium..total..Serum...Plasma+Calculated.P.Axis+Calculated.R.Axis+Calculated.T.Axis+Carbon.Dioxide..Total+Chloride..Serum...Plasma+Creatinine+Creatinine..random.urine+DEEPEST.VERTICAL.POCKET..CM.+eGFR.if.non.African.American+Eosinophil.Abs.Ct+Fetal.Breathing+Fetal.Movement+Fetal.Tone+FHR.Baseline+Fibrinogen..Functional+Fluid.Volume+Free.T4+Glu.Tol.Post.Glucola+Glucose.Loading.Screen+Glucose..120.Mins+Glucose..60.Mins+Glucose..Fasting..Pregnant..2.hr.GTT+Glucose..Fasting..Pregnant..3.hr.GTT+Glucose..meter.download+Glucose..non.fasting+Hematocrit+Hemoglobin+Hemoglobin.A1c+Hours.Collected+Lymphocyte.Abs.Cnt+MCH+MCHC+MCV+Mins.Post.Gluc.Dose+Monocyte.Abs.Count+Neutrophil.Absolute.Count+Nonstress.Test+OGT.Glucola.Dose+P.R.Interval+pH..UA+Platelet.Count+POCT.pH..UA+POCT.Spec.Grav..UA+Potassium..Serum...Plasma+Prot.Concentration.UR+Prot.Total.per.Day.UR+Protein.Creat.Ratio..random+PT+QRS.Duration+QT.Interval+QTcb+RBC.Count+Sodium..Serum...Plasma+Specific.Gravity+Thyroid.Stimulating.Hormone+Total.Volume.Collected+Urea.Nitrogen..Serum...Plasma+Ventricular.Rate+WBC.Count
+                               ,rnd = list(Patient_index=~1),family = family, data = EMR_long_labs_train, lambda=lambda[opt]))
     if(class(glm_final)!="try-error"){  
       summary(glm_final)
     
@@ -107,11 +124,11 @@ for (i in 1:10){
   save(predictions,original,file=paste0("Results/predictions_labs_down_",i,".Rdata"))
 }
 
-
+####Run AUC
 auc_mean<-NULL
-for(i in 1:5){
+for(i in 1:10){
   print(i)
-  load(paste0("Results/LABS_down/predictions_labs_down_",i,".Rdata"))
+  load(paste0("Results/predictions_labs_down_",i,".Rdata"))
   auc<-NULL
   for (j in 1:10){
     print(j)
