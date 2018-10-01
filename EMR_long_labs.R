@@ -49,14 +49,16 @@ dim(matrix[which(matrix[,1]!=0),]) #324 births with PTB
 dim(matrix[which(matrix[,2]!=0),]) #5006 births with Term
 
 ###Filter by nearZeroVar
-id_nzv_order<-nearZeroVar(EMR_long_labs_order,freqCut = 99/1,uniqueCut = 1)
-id_nzv_result<-nearZeroVar(EMR_long_labs_result,freqCut = 99/1,uniqueCut = 1)
-match(id_nzv_order,id_nzv_result) ##All the ones in order are included in results, so taken the order
+##Total samples = 13214 At least 10 values different. freqCut = 13214-19[10+9]=13195, uniqueCut = (10/13214)*100 
+n=dim(EMR_long_labs_order)[1]
+id_nzv_order<-nearZeroVar(EMR_long_labs_order,freqCut = n-19,uniqueCut = 100*(10/n))
+id_nzv_result<-nearZeroVar(EMR_long_labs_result,freqCut = n-19,uniqueCut = 100*(10/n))
+match(id_nzv_order,id_nzv_result) ##All the ones in order are included in results, so taken the result
 ###Build filtered mayrix
-EMR_long_labs_order_filter<-EMR_long_labs_order[,-id_nzv_order] 
-EMR_long_labs_result_filter<-EMR_long_labs_result[,-id_nzv_order]
+EMR_long_labs_order_filter<-EMR_long_labs_order[,-id_nzv_result] 
+EMR_long_labs_result_filter<-EMR_long_labs_result[,-id_nzv_result]
 
-##73 labs final set
+##189 labs final set
 ###Converting to number
 EMR_long_labs_order_filter_num<-EMR_long_labs_order_filter
 for(i in 1:ncol(EMR_long_labs_order_filter)){
