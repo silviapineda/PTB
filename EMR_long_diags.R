@@ -41,7 +41,7 @@ rownames(EMR_long_diags)<-EMR_long_diags$Unique_id
 ##Select all the variables 
 EMR_long_diags_result<-EMR_long_diags[,6:(ncol(EMR_long_diags)-5)] #3157 diags
 
-table(EMR_long_diags_result$Term) #1928 PTB and 32,291 Term
+table(EMR_long_diags$Term) #1928 PTB and 32,291 Term
 rownames(EMR_long_diags_result)<-EMR_long_diags$Unique_id
 
 matrix<-data.matrix(table(EMR_long_diags$Patient_index,EMR_long_diags$Term))
@@ -50,8 +50,10 @@ dim(matrix[which(matrix[,1]!=0),]) #414 births with PTB
 dim(matrix[which(matrix[,2]!=0),]) #8648 births with Term
 
 ###Filter by nearZeroVar
-id_nzv<-nearZeroVar(EMR_long_diags_result,freqCut = 99/1,uniqueCut = 1)
-EMR_long_diags_filter<-EMR_long_diags_result[,-id_nzv] ##75 diags
+##Total samples = 34219. At least 6 values different. freqCut = 34219-11[6+5]=34208, uniqueCut = (6/34219)*100 
+n=dim(EMR_long_diags_result)[1]
+id_nzv<-nearZeroVar(EMR_long_diags_result,freqCut = n-11, uniqueCut = 100*(6/n))
+EMR_long_diags_filter<-EMR_long_diags_result[,-id_nzv] ##2132 diags
 
 ####Running the univariate longitudinal model
 EMR_long_diags$Patient_index<-factor(EMR_long_diags$Patient_index)
