@@ -19,6 +19,7 @@ library(lme4)
 library("RColorBrewer")
 library(ggplot2)
 library(caret)
+library(glmmLasso)
 
 working_directory<-"/Users/Pinedasans/PTB/"
 setwd(working_directory)
@@ -29,17 +30,23 @@ setwd(working_directory)
 ##First: Put everything needed in the same dataframe
 load("Data/EMR_long_meds_multi.Rdata")
 
-#demographics<-read.csv("Data/EMR_patients_patient_race.csv") 
-##I am going to wait to Idit for the demo, meantime I will work only with the meds
-# EMR_long_meds_multivariate$ID<-rownames(EMR_long_meds_multivariate)
-# EMR_meds_demo<-merge(EMR_long_meds_multivariate,demographics,by="Patient_index")
-# EMR_meds_demo<-subset(EMR_meds_demo,select = -c(ID,X,Term.y))
-# colnames(EMR_meds_demo)[1]<-"Term"
-# ##near Zero Variance correction
-# id_nzv<-nearZeroVar(EMR_meds_demo,freqCut = 99/1,uniqueCut = 1)
-# EMR_meds_demo_filter<-EMR_meds_demo[,-id_nzv] ##
+demographics<-read.csv("Data/EMR_patients_patient_race_filtered.csv") 
+demographics$Patient_Marital_Status<-gsub("RDP-Dissolved","Unknown/Declined",demographics$Patient_Marital_Status)
+demographics$Patient_Marital_Status<-gsub("RDP-LG SEP","Unknown/Declined",demographics$Patient_Marital_Status)
+demographics$Patient_Marital_Status<-gsub("Widowed","Unknown/Declined",demographics$Patient_Marital_Status)
 
-EMR_meds_demo<-EMR_long_meds_multivariate
+demographics$Patient_Smoking_Status<-gsub("Heavy Tobacco Smoker","Current Every Day Smoker",demographics$Patient_Smoking_Status)
+demographics$Patient_Smoking_Status<-gsub("Never Assessed","Unknown/NeverAssesed",demographics$Patient_Smoking_Status)
+demographics$Patient_Smoking_Status<-gsub("Unknown If Ever Smoked","Unknown/NeverAssesed",demographics$Patient_Smoking_Status)
+demographics$Patient_Smoking_Status<-gsub("Smoker, Current Status Unknown","Unknown/NeverAssesed",demographics$Patient_Smoking_Status)
+
+EMR_long_meds_multivariate$ID<-rownames(EMR_long_meds_multivariate)
+EMR_meds_demo<-merge(EMR_long_meds_multivariate,demographics,by="Patient_index")
+EMR_meds_demo<-subset(EMR_meds_demo,select = -c(ID,X,Term.y))
+colnames(EMR_meds_demo)[2]<-"Term"
+# ##near Zero Variance correction
+id_nzv<-nearZeroVar(EMR_meds_demo,freqCut = 99/1,uniqueCut = 1)
+#EMR_meds_demo_filter<-EMR_meds_demo[,-id_nzv] ##
 
 # ##To extract the names of the variables for the glmmLasso
 paste(colnames(EMR_meds_demo),collapse ="+")
@@ -48,8 +55,6 @@ paste(colnames(EMR_meds_demo),collapse ="+")
 ####################################
 ##  Run glmmLasso for the multi  ##
 ###################################
-
-library(glmmLasso)
 
 ##Number of unique patient_index to obtain the train and test set
 set.seed(54)
@@ -83,6 +88,7 @@ for( i in 1:10){
   for(j in 1:length(lambda)){
     print(paste("Iteration ", j,sep=""))
     glm1 <- try(glmmLasso(Term ~ACETAMINOPHEN..Acetaminophen.+ACYCLOVIR..Acyclovir.+ALBUTEROL.SULFATE..Albuterol.Sulfate.+Aluminum.Hydroxide...Simethicone+AMOXICILLIN..Amoxicillin.+ASCORBIC.ACID..Ascorbic.Acid.+ASPIRIN..Aspirin.+AZITHROMYCIN..Azithromycin.+BETAMETHASONE.ACETATE..Betamethasone.acetate.+BISACODYL..Bisacodyl.+Blood.Sugar..Blood.Glucose.+BUTALBITAL..butalbital.+CALCIUM.CARBONATE..Calcium.Carbonate.+CLOTRIMAZOLE..Clotrimazole.+DEXTROSE..Glucose.+DIPHENHYDRAMINE..Diphenhydramine.+DOCUSATE.SODIUM..Docusate.Sodium.+Edisylate..Prochlorperazine..Prochlorperazine.Edisylate.Salt.+FAMOTIDINE..Famotidine.+FENTANYL..Fentanyl.+FERROUS.SULFATE..ferrous.sulfate.+ferrous.sulfate.iron..ferrous.sulfate.+FLUCONAZOLE..Fluconazole.+FLUTICASONE..fluticasone.+GLUCOSE..Glucose.+Hydrocodone.Acetaminophen..Acetaminophen...Hydrocodone.+HYDROCORTISONE..Hydrocortisone.+LABETALOL..Labetalol.+lactated.ringers..Lactated.Ringer.s.Solution.+LEVOTHYROXINE..Synthetic.Levothyroxine.+LIDOCAINE..Lidocaine.+LORAZEPAM..Lorazepam.+MAGNESIUM.SULFATE..Magnesium.Sulfate.+Maleate..Prochlorperazine..Prochlorperazine.Maleate.+METFORMIN..Metformin.+METRONIDAZOLE..Metronidazole.+MICONAZOLE.NITRATE..Miconazole.Nitrate.+NIFEDIPINE..Nifedipine.+nitrofurantoin.macrocrystals..NITROFURANTOIN..MACROCRYSTALS.+ondansetron.hcl..Ondansetron.Hydrochloride.+PREDNISONE..Prednisone.+RANITIDINE..Ranitidine.+RHO.D.IMMUNE.GLOBULIN..Rho.D..Immune.Globulin.+Sennosides+SERTRALINE..Sertraline.+SIMETHICONE..Simethicone.+SODIUM.CHLORIDE..Sodium.Chloride.+Tetanus..tetanus.toxoid.vaccine..inactivated.+TRIAMCINOLONE.ACETONIDE..Triamcinolone.Acetonide.+Tuberculin.PPD..Purified.Protein.Derivative.of.Tuberculin.
+                          +Patient_Ethnicity+Patient_Marital_Status+Patient_Smoking_Status+Patient_Age+Patient_Race
                           ,rnd = list(Patient_index=~1),family = family, data = EMR_long_meds_train, lambda=lambda[j]),silent=TRUE)  
     if(class(glm1)!="try-error"){  
       BIC_vec[j]<-glm1$bic
@@ -91,6 +97,7 @@ for( i in 1:10){
   
   opt<-which.min(BIC_vec)
   glm_final <- glmmLasso(Term ~ ACETAMINOPHEN..Acetaminophen.+ACYCLOVIR..Acyclovir.+ALBUTEROL.SULFATE..Albuterol.Sulfate.+Aluminum.Hydroxide...Simethicone+AMOXICILLIN..Amoxicillin.+ASCORBIC.ACID..Ascorbic.Acid.+ASPIRIN..Aspirin.+AZITHROMYCIN..Azithromycin.+BETAMETHASONE.ACETATE..Betamethasone.acetate.+BISACODYL..Bisacodyl.+Blood.Sugar..Blood.Glucose.+BUTALBITAL..butalbital.+CALCIUM.CARBONATE..Calcium.Carbonate.+CLOTRIMAZOLE..Clotrimazole.+DEXTROSE..Glucose.+DIPHENHYDRAMINE..Diphenhydramine.+DOCUSATE.SODIUM..Docusate.Sodium.+Edisylate..Prochlorperazine..Prochlorperazine.Edisylate.Salt.+FAMOTIDINE..Famotidine.+FENTANYL..Fentanyl.+FERROUS.SULFATE..ferrous.sulfate.+ferrous.sulfate.iron..ferrous.sulfate.+FLUCONAZOLE..Fluconazole.+FLUTICASONE..fluticasone.+GLUCOSE..Glucose.+Hydrocodone.Acetaminophen..Acetaminophen...Hydrocodone.+HYDROCORTISONE..Hydrocortisone.+LABETALOL..Labetalol.+lactated.ringers..Lactated.Ringer.s.Solution.+LEVOTHYROXINE..Synthetic.Levothyroxine.+LIDOCAINE..Lidocaine.+LORAZEPAM..Lorazepam.+MAGNESIUM.SULFATE..Magnesium.Sulfate.+Maleate..Prochlorperazine..Prochlorperazine.Maleate.+METFORMIN..Metformin.+METRONIDAZOLE..Metronidazole.+MICONAZOLE.NITRATE..Miconazole.Nitrate.+NIFEDIPINE..Nifedipine.+nitrofurantoin.macrocrystals..NITROFURANTOIN..MACROCRYSTALS.+ondansetron.hcl..Ondansetron.Hydrochloride.+PREDNISONE..Prednisone.+RANITIDINE..Ranitidine.+RHO.D.IMMUNE.GLOBULIN..Rho.D..Immune.Globulin.+Sennosides+SERTRALINE..Sertraline.+SIMETHICONE..Simethicone.+SODIUM.CHLORIDE..Sodium.Chloride.+Tetanus..tetanus.toxoid.vaccine..inactivated.+TRIAMCINOLONE.ACETONIDE..Triamcinolone.Acetonide.+Tuberculin.PPD..Purified.Protein.Derivative.of.Tuberculin.
+                         +Patient_Ethnicity+Patient_Marital_Status+Patient_Smoking_Status+Patient_Age+Patient_Race
                          ,rnd = list(Patient_index=~1),family = family, data = EMR_long_meds_test, lambda=lambda[opt])
   summary(glm_final)
   
