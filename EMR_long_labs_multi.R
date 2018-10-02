@@ -21,7 +21,7 @@ library(ggplot2)
 library(caret)
 library(glmmLasso)
 
-working_directory<-"/Users/Pinedasans/PTB/"
+working_directory<-"/home/spineda/UCSF/PTB/"
 setwd(working_directory)
 
 #############################
@@ -46,7 +46,7 @@ EMR_labs_demo<-subset(EMR_labs_demo,select = -c(ID,X,Term.y))
 colnames(EMR_labs_demo)[2]<-"Term"
 ##near Zero Variance correction
 n=dim(EMR_labs_demo)[1]
-id_nzv<-nearZeroVar(EMR_labs_demo,freqCut = n-19,uniqueCut = 100*(10/n)) #0
+#id_nzv<-nearZeroVar(EMR_labs_demo,freqCut = n-19,uniqueCut = 100*(10/n)) #0
 EMR_labs_demo_filter<-EMR_labs_demo
 
 # ##To extract the names of the variables for the glmmLasso
