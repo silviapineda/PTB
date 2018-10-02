@@ -50,10 +50,12 @@ dim(matrix[which(matrix[,1]!=0),]) #414 births with PTB
 dim(matrix[which(matrix[,2]!=0),]) #8648 births with Term
 
 ###Filter by nearZeroVar
-##Total samples = 34219. At least 6 values different. freqCut = 34219-11[6+5]=34208, uniqueCut = (6/34219)*100 
+##Total samples = 34219.
+##Uniquecut is the cutoff for the percentage of distinct values out of the number of total samples. 
+##FreqCut is the cutoff for the ratio of the most common value to the second most common value. 
 n=dim(EMR_long_diags_result)[1]
-id_nzv<-nearZeroVar(EMR_long_diags_result,freqCut = n-11, uniqueCut = 100*(6/n))
-EMR_long_diags_filter<-EMR_long_diags_result[,-id_nzv] ##2132 diags
+id_nzv<-nearZeroVar(EMR_long_diags_result,freqCut = (n-10)/10, uniqueCut = 100*(10/n)) 
+EMR_long_diags_filter<-EMR_long_diags_result[,-id_nzv] ##855 diags
 
 ####Running the univariate longitudinal model
 EMR_long_diags$Patient_index<-factor(EMR_long_diags$Patient_index)
