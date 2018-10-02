@@ -45,8 +45,6 @@ EMR_labs_demo<-merge(EMR_long_labs_multivariate,demographics,by="Patient_index")
 EMR_labs_demo<-subset(EMR_labs_demo,select = -c(ID,X,Term.y))
 colnames(EMR_labs_demo)[2]<-"Term"
 ##near Zero Variance correction
-n=dim(EMR_labs_demo)[1]
-id_nzv<-nearZeroVar(EMR_labs_demo,freqCut = n-19,uniqueCut = 100*(10/n)) #0
 EMR_labs_demo_filter<-EMR_labs_demo
 
 # ##To extract the names of the variables for the glmmLasso
