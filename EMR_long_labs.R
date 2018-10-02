@@ -106,7 +106,6 @@ id.sign<-match(results_labs_sign$X,colnames(EMR_long_labs_result_filter))
 EMR_long_labs_result_filter_sign<-EMR_long_labs_result_filter[,id.sign]
 EMR_long_labs_order_filter_num_sign<-EMR_long_labs_order_filter_num[,id.sign]
 EMR_long_labs_result_filter_sign<-EMR_long_labs_result_filter[,id.sign]
-#write.csv(cbind(results_labs_sign,num_term,perc_term,num_PTB,perc_PTB),"results_labs_sign.csv")
 
 perc_term<-NULL
 perc_PTB<-NULL
