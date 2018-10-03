@@ -35,23 +35,24 @@ splitpop <- strsplit(as.character(EMR_long_meds$Patient_index),"_")
 EMR_long_meds$Individual_id <- unlist(lapply(splitpop, "[", 1))
 EMR_long_meds$Birth_id<- unlist(lapply(splitpop, "[", 2))
 EMR_long_meds$Unique_id<-paste(EMR_long_meds$Patient_index,EMR_long_meds$WeekOfPregnancy,sep="_")
-rownames(EMR_long_meds)<-EMR_long_meds$Unique_id
-
 
 ##Select all the variables 
-EMR_long_meds_result<-EMR_long_meds[,4:(ncol(EMR_long_meds)-3)] #427 meds
-
-table(EMR_long_meds_result$Term) #426 PTB and 4,193 Term
+EMR_long_meds_result<-EMR_long_meds[,1:(ncol(EMR_long_meds)-3)] ##430 meds test
 rownames(EMR_long_meds_result)<-EMR_long_meds$Unique_id
-  
-matrix<-data.matrix(table(EMR_long_meds_result$Patient_index,EMR_long_meds_result$Term))
+
+matrix<-data.matrix(table(EMR_long_meds$Patient_index,EMR_long_meds$Term))
 matrix[which(matrix[,1]!=0 & matrix[,2]!=0),] ##Individuals classify as PTB and Term 
 dim(matrix[which(matrix[,1]!=0),]) #218 births with PTB
 dim(matrix[which(matrix[,2]!=0),]) #2894 births with Term
 
 ###Filter by nearZeroVar
-id_nzv<-nearZeroVar(EMR_long_meds_result,freqCut = 99/1,uniqueCut = 1)
-EMR_long_meds_filter<-EMR_long_meds_result[,-id_nzv] ##50 meds
+##Total samples = 4619.
+##Uniquecut is the cutoff for the percentage of distinct values out of the number of total samples. 
+##FreqCut is the cutoff for the ratio of the most common value to the second most common value. 
+n=dim(EMR_long_meds_result)[1]
+id_nzv<-nearZeroVar(EMR_long_meds_result,freqCut = (n-10)/10, uniqueCut = 100*(10/n)) 
+EMR_long_meds_filter<-EMR_long_meds_result[,-id_nzv] ##141
+
 
 ####Running the univariate longitudinal model
 EMR_long_meds$Patient_index<-factor(EMR_long_meds$Patient_index)
